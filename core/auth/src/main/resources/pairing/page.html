@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Подключение к Boosty TV</title>
+<style>
+  :root { color-scheme:dark; --accent:#F5A623; --ink:#1A1206; --bg:#0E0F12;
+    --surface:#191C22; --raised:#252931; --text:#F2F3F5; --muted:#B8BDC7; --border:#414752; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:40px 24px 48px; background:radial-gradient(ellipse at 100% 0, #302416 0, transparent 55%),var(--bg);
+    color:var(--text); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:720px; margin:auto; }
+  .brand { display:flex; align-items:center; gap:10px; margin-bottom:36px; font-size:24px; font-weight:750; }
+  .brand svg { width:26px; height:26px; fill:var(--accent); }
+  .brand span { color:var(--accent); background:#F5A6231F; border-radius:7px; padding:2px 9px; font-size:14px; }
+  h1 { font-size:clamp(30px,5vw,42px); line-height:1.15; letter-spacing:-.025em; margin:12px 0 16px; }
+  h2 { font-size:22px; line-height:1.35; margin:0 0 14px; letter-spacing:-.015em; }
+  h3 { font-size:17px; margin:28px 0 10px; }
+  p { margin:8px 0 16px; }
+  .muted, li { color:var(--muted); }
+  .label { color:var(--accent); font-size:12px; font-weight:700; letter-spacing:1.5px; }
+  .card { margin:28px 0; background:var(--surface); padding:28px; border:1px solid #41475280; border-radius:22px; }
+  .step { display:inline-flex; align-items:center; justify-content:center; min-width:32px; height:32px;
+    margin-right:6px; border-radius:9px; background:#F5A6231F; color:var(--accent); font-size:17px; }
+  button, .button { display:block; width:100%; min-height:50px; border:1px solid transparent; border-radius:12px;
+    padding:14px 20px; background:var(--accent); color:var(--ink); 
+    font-family:inherit; font-size:16px; font-weight:700; line-height:1.4; text-align:center;
+    text-decoration:none; cursor:pointer; margin:16px 0 0; transition:background .15s, border-color .15s; }
+  button:hover:not(:disabled), .button:hover { background:#FFC35D; }
+  button:disabled { opacity:.55; cursor:wait; }
+  .secondary { color:var(--text); background:var(--raised); border-color:var(--border); }
+  .secondary:hover:not(:disabled) { background:#343A45; }
+  .bookmark-drag { cursor:grab; border:2px dashed var(--ink); user-select:none; }
+  .bookmark-drag:active { cursor:grabbing; }
+  textarea, input, select { width:100%; min-height:48px; border:1px solid var(--border); border-radius:10px;
+    padding:14px; background:var(--bg); color:var(--text); font:14px/1.5 ui-monospace,monospace; }
+  select { font:inherit; cursor:pointer; }
+  textarea { resize:vertical; min-height:96px; }
+  #bookmark-url { font-size:12px; min-height:80px; }
+  label { display:block; margin:16px 0 8px; font-size:14px; font-weight:600; }
+  #guide-title { margin-top:28px; }
+  details { margin-top:20px; padding-top:16px; border-top:1px solid #41475280; }
+  summary { cursor:pointer; color:var(--accent); min-height:44px; padding:8px 0; }
+  ol { padding-left:24px; }
+  li { padding-left:4px; padding-bottom:12px; }
+  b { color:var(--text); }
+  code { overflow-wrap:anywhere; color:var(--text); }
+  a { color:var(--accent); text-underline-offset:4px; }
+  .note { font-size:14px; color:var(--muted); }
+  .status { padding:18px 20px; border:1px solid var(--border); border-radius:14px;
+    margin:20px 0; background:var(--raised); overflow-wrap:anywhere; }
+  .ok { background:#16351F; color:#A1EDB2; border-color:#386548; }
+  .err { background:#3A1B1B; color:#FFB3B3; border-color:#824848; }
+  :focus-visible { outline:3px solid var(--text); outline-offset:4px; }
+  input:focus, textarea:focus, select:focus { border-color:var(--accent); }
+  [hidden] { display:none !important; }
+  @media (max-width:480px) { body { padding:24px 16px 36px; } .brand { margin-bottom:28px; }
+    .card { padding:20px; border-radius:18px; } h2 { font-size:20px; } }
+  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { transition:none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3L21 12L5 21Z"/></svg>Boosty <span>TV</span></div>
+  <div class="label">BOOSTY TV · ПОДКЛЮЧЕНИЕ</div>
+  <h1>Подключить Boosty к ТВ</h1>
+  <p class="muted">Используйте браузер на телефоне или компьютере, в котором вы входите в Boosty.
+    Устройство и ТВ должны быть в одной локальной сети.</p>
+  <p class="note">Адрес <code id="connection-address"></code> не истекает по времени,
+    пока на ТВ открыт экран подключения.</p>
+
+  <section id="review" class="card" hidden>
+    <h2>Сессия готова к передаче</h2>
+    <p class="muted">Подключить Boosty к вашему телевизору <b id="tv-address"></b>?</p>
+    <p class="note">Сессия зашифрована. Токен не нужно копировать или вводить вручную.</p>
+    <button id="send-session" type="button">Передать на ТВ</button>
+  </section>
+
+  <div id="status" role="status" aria-live="polite" hidden></div>
+  <div id="setup">
+    <label for="device-guide">Инструкция для вашего устройства</label>
+    <select id="device-guide">
+      <option value="computer">Компьютер</option>
+      <option value="android">Android · Chrome</option>
+      <option value="ios">iPhone / iPad</option>
+    </select>
+    <p class="note">Устройство определяется автоматически. При необходимости выберите другое.</p>
+    <h2 id="guide-title">Инструкция для компьютера</h2>
+
+    <section class="card">
+      <h2><span class="step">1.</span> Сохраните закладку Boosty TV</h2>
+      <p class="muted">Это делается один раз. Закладка читает сессию на странице Boosty и возвращает её на ваш ТВ.</p>
+      <p class="note">Замените адрес старой закладки новой версией с этой страницы: Chrome мог обрезать прежний длинный адрес при сохранении.</p>
+      <div id="guide-computer">
+        <p>Перетащите кнопку <b>Boosty TV</b> на панель закладок браузера.
+          Имя и нужный адрес сохранятся сразу.</p>
+        <a id="install-bookmark" class="button bookmark-drag" href="%%BROWSER_BOOKMARKLET%%"
+          draggable="true" aria-describedby="bookmark-drag-help">Boosty TV</a>
+        <p id="bookmark-drag-help" class="note">Зажмите кнопку мышью и перенесите её на панель закладок.
+          В Chrome и Edge панель можно показать через <b>Ctrl+Shift+B</b>
+          (на Mac — <b>⌘Shift+B</b>).</p>
+        <details>
+          <summary>Если перетащить не получается: добавить вручную</summary>
+          <ol>
+            <li>Нажмите кнопку копирования ниже, затем <b>Ctrl+D</b> (на Mac — <b>⌘D</b>).
+              Назовите закладку <b>Boosty TV</b> и сохраните её.</li>
+            <li>Через меню закладок откройте изменение созданной закладки.
+              Замените поле <b>Адрес / URL</b> скопированным кодом целиком и сохраните.</li>
+          </ol>
+        </details>
+      </div>
+      <button id="copy-bookmark" type="button">Скопировать адрес закладки</button>
+      <details id="bookmark-code">
+        <summary>Адрес закладки для ручного копирования</summary>
+        <label for="bookmark-url">Вставлять в адрес закладки, не в строку поиска</label>
+        <textarea id="bookmark-url" readonly autocapitalize="off" spellcheck="false">%%BROWSER_BOOKMARKLET%%</textarea>
+      </details>
+      <div id="guide-android" hidden>
+        <ol>
+          <li>Сохраните любую страницу в закладки через <b>⋮ → ★</b>.</li>
+          <li>Откройте изменение закладки. Назовите её <b>Boosty TV</b> и замените её адрес скопированным текстом целиком.</li>
+          <li>Вернитесь на открытую страницу. Нажмите адресную строку, введите <b>Boosty TV</b> и нажмите подсказку со <b>звёздочкой</b> и адресом <code>javascript:</code>. Клавиша Enter запускает поиск.</li>
+        </ol>
+        <p><b>Запускайте через подсказку адресной строки, а не через ⋮ → Закладки.</b> Не открывайте закладку в новой вкладке.</p>
+      </div>
+      <div id="guide-ios" hidden>
+        <ol>
+          <li>Сохраните любую страницу в закладки вашего браузера.
+            В Safari: <b>Поделиться → Добавить закладку</b>.</li>
+          <li>Откройте список закладок, удерживайте созданную закладку и выберите <b>Изменить</b>.</li>
+          <li>Назовите её <b>Boosty TV</b>, замените адрес скопированным текстом и сохраните.</li>
+          <li>Вернитесь на открытую страницу. Откройте список закладок и выберите <b>Boosty TV</b> в этой же вкладке.</li>
+        </ol>
+      </div>
+      <h3>Проверьте сохранённую закладку</h3>
+      <p class="muted">Оставаясь на этой странице, запустите сохранённую закладку <b>Boosty TV</b>.
+        Используйте способ запуска из инструкции выше.</p>
+      <div id="bookmark-test-status" class="status" role="status" aria-live="polite" tabindex="-1">Ожидаем запуск закладки…</div>
+      <details>
+        <summary>Нажимаю закладку, но ничего не происходит</summary>
+        <ol>
+          <li>Вернитесь к открытой странице в браузере. Закладку нужно запускать на ней, в той же вкладке.</li>
+          <li>Проверьте адрес сохранённой закладки: он должен начинаться с <code>javascript:</code>. Если там обычный адрес сайта или поисковика, замените адрес скопированным текстом целиком.</li>
+        </ol>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">2.</span> Откройте Boosty</h2>
+      <p class="muted">Войдите привычным способом, включая Google. После входа вернитесь сюда и снова нажмите кнопку ниже — она передаёт адрес текущего подключения.</p>
+      <a id="open-boosty" class="button" href="https://boosty.to/" target="_blank" rel="noopener noreferrer">Открыть Boosty</a>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">3.</span> Запустите закладку на Boosty</h2>
+      <p id="run-computer" class="muted">В открытой вкладке Boosty нажмите <b>Boosty TV</b>
+        на панели или в меню закладок браузера.</p>
+      <p id="run-android" class="muted" hidden>На странице Boosty нажмите адресную строку,
+        введите <b>Boosty TV</b> и выберите подсказку со <b>звёздочкой</b> и адресом
+        <code>javascript:</code>. Не нажимайте Enter.</p>
+      <p id="run-ios" class="muted" hidden>На странице Boosty откройте список закладок
+        вашего браузера и нажмите <b>Boosty TV</b>. Запускайте в текущей вкладке.</p>
+      <p class="muted">Браузер вернётся на страницу подключения — нажмите <b>Передать на ТВ</b>.</p>
+      <p class="note">Страница работает без ограничения по времени, пока открыт экран подключения на ТВ.</p>
+    </section>
+
+    <details class="card">
+      <summary>Другой способ: вставить сессию вручную</summary>
+      <p class="muted">Если вы уже скопировали сессию старой закладкой или из приложения, вставьте её ниже.</p>
+      <p><a href="%%BOOKMARKLET%%">Старая закладка: скопировать сессию</a></p>
+      <form id="f" method="POST" action="%%SUBMIT%%">
+        <label for="payload">Скопированная сессия</label>
+        <textarea id="payload" name="payload" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="JSON с auth и clientId"></textarea>
+        <details>
+          <summary>Ввести auth и _clientId отдельно</summary>
+          <label for="auth">auth</label>
+          <textarea id="auth" name="auth" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+          <label for="clientId">_clientId</label>
+          <input id="clientId" name="clientId" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </details>
+        <button id="send-manual" type="submit" class="secondary">Передать вставленную сессию</button>
+      </form>
+    </details>
+  </div>
+  <p class="note">Страница открыта с вашего ТВ. Передача сессии идёт напрямую на ТВ по локальной сети.</p>
+</main>
+<script>%%PAGE_SCRIPT%%</script>
+</body>
+</html>
