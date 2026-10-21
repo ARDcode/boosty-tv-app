@@ -5,6 +5,7 @@ import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -78,7 +79,28 @@ internal fun applyPlayerAppearance(playerView: PlayerView, title: String) {
                     child.background = playerControlBackground(context)
                     child.imageTintList = playerControlTextColors(context)
                 }
-                is Button -> { child.setTextColor(playerControlTextColors(context)); child.textSize = 14f }
+                is Button -> {
+                    child.setTextColor(playerControlTextColors(context))
+                    if (child.id == androidx.media3.ui.R.id.exo_rew_with_amount ||
+                        child.id == androidx.media3.ui.R.id.exo_ffwd_with_amount
+                    ) {
+                        // These labels sit inside Media3's circular arrows. The generic button
+                        // font and the stock bottom padding move them out of the arrows' centre.
+                        child.setTextSize(
+                            TypedValue.COMPLEX_UNIT_PX,
+                            context.resources.getDimension(androidx.media3.ui.R.dimen.exo_icon_text_size),
+                        )
+                        child.gravity = Gravity.CENTER
+                        child.includeFontPadding = false
+                        // The circular part of the arrow sits 1.5dp below the icon's centre.
+                        child.setPadding(0, context.playerDp(3), 0, 0)
+                        child.background = playerControlBackground(context)
+                        child.backgroundTintList = null
+                        child.foregroundTintList = playerControlTextColors(context)
+                    } else {
+                        child.textSize = 14f
+                    }
+                }
                 is TextView -> { child.setTextColor(context.getColor(UiR.color.boosty_text)); child.textSize = 15f }
                 is ViewGroup -> styleChildren(child)
             }

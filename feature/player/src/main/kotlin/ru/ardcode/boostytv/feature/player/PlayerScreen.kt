@@ -21,7 +21,6 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import ru.ardcode.boostytv.core.ui.component.EmptyState
 import ru.ardcode.boostytv.core.ui.component.ErrorState
 import ru.ardcode.boostytv.core.ui.component.LoadingState
@@ -150,7 +149,7 @@ private fun VideoSurface(
     Box(modifier = Modifier.fillMaxSize()) {
         if (playbackError == null) AndroidView(
             factory = { ctx ->
-                val view = PlayerView(ctx)
+                val view = TvPlayerView(ctx)
                 view.apply {
                     this.player = player
                     useController = true
